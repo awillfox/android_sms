@@ -1,0 +1,70 @@
+version: '3'
+
+vars:
+  APP_ID: com.shipnity.smsnote
+  APK: app/build/outputs/apk/debug/app-debug.apk
+  MAIN: com.shipnity.smsnote/.MainActivity
+
+tasks:
+  build:
+    desc: Assemble debug APK
+    cmds:
+      - ./gradlew assembleDebug
+
+  install:
+    desc: Install APK on connected device
+    cmds:
+      - adb install -r {{.APK}}
+
+  deploy:
+    desc: Build then install
+    cmds:
+      - task: build
+      - task: install
+
+  run:
+    desc: Build, install, and launch app
+    cmds:
+      - task: deploy
+      - adb shell am start -n {{.MAIN}}
+
+  launch:
+    desc: Launch app without rebuilding
+    cmds:
+      - adb shell am start -n {{.MAIN}}
+
+  uninstall:
+    desc: Remove app from device
+    cmds:
+      - adb shell pm uninstall {{.APP_ID}}
+
+  logs:
+    desc: Stream logcat filtered to app
+    cmds:
+      - adb logcat --pid=$(adb shell pidof {{.APP_ID}} | tr -d '\r')
+
+  logs-errors:
+    desc: Stream logcat errors only
+    cmds:
+      - adb logcat '*:E' --pid=$(adb shell pidof {{.APP_ID}} | tr -d '\r')
+
+  clear-data:
+    desc: Clear app data (resets permissions)
+    cmds:
+      - adb shell pm clear {{.APP_ID}}
+
+  restart-service:
+    desc: Force restart ArchiveService
+    cmds:
+      - adb shell am stopservice -n {{.APP_ID}}/.ArchiveService
+      - adb shell am startforegroundservice -n {{.APP_ID}}/.ArchiveService
+
+  kill:
+    desc: Force stop app process
+    cmds:
+      - adb shell am force-stop {{.APP_ID}}
+
+  devices:
+    desc: List connected ADB devices
+    cmds:
+      - adb devices
